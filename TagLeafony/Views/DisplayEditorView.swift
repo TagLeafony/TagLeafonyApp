@@ -7,29 +7,17 @@ import PhotosUI
 import SwiftUI
 
 // ============================================================================
-//  表示内容を作る・直す画面。一覧から開かれる。
-//
-//  できること:
-//      - 文字 / 写真 / 市松模様 から 296×128 の白黒2値を作る
-//      - 写真は指でドラッグ・ピンチして切り取る位置と大きさを決める
-//      - 変換した結果を実寸で確認する
-//      - 名前を付けて保存する
-//
-//  ★プレビューが要になる★
-//      296×128 の白黒2値は、頭で想像したものとかなり違う絵が出る。
-//      特に写真は変換の仕方で別物になる。
-//      実機に焼く前にその場で見られないと、何度も往復することになる。
+//  表示内容を作る・直す画面
 // ============================================================================
 
 struct DisplayEditorView: View {
 
-    /// 直すときは既存のものを渡す。新規なら nil。
+    /// 直すときは既存のものを渡す,新規なら nil
     let editing: DisplayContent?
 
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var store = ContentStore.shared
 
-    /// 何から作るか。
     private enum Source: String, CaseIterable {
         case text  = "文字"
         case photo = "写真"
@@ -48,14 +36,14 @@ struct DisplayEditorView: View {
     @State private var useDither = true
     @State private var threshold: Double = 128
 
-    /// 写真の置き方（確定している値）。
+    // 写真の置き方
     @State private var transform = ImageBinarizer.Transform.identity
 
-    /// 指を動かしている最中の差分。離すと transform に取り込まれる。
+    // 指を動かしている最中の差分
     @GestureState private var dragDelta: CGSize = .zero
     @GestureState private var pinchDelta: CGFloat = 1
 
-    /// 指の動きを足し込んだ、いま表示すべき置き方。
+    // 指の動きを足し込んだ,いま表示すべき置き方
     private var liveTransform: ImageBinarizer.Transform {
         ImageBinarizer.Transform(
             scale: transform.scale * pinchDelta,
@@ -64,7 +52,7 @@ struct DisplayEditorView: View {
         )
     }
 
-    /// 画面に出す 296×128 の白黒画像。入力が変わるたびに作り直される。
+    // 画面に出す 296×128 の白黒画像
     private var rendered: UIImage? {
         switch source {
         case .text:
@@ -141,7 +129,7 @@ struct DisplayEditorView: View {
         dismiss()
     }
 
-    /// 名前を入れなかったときの既定。文字なら1行目、それ以外は作り方の名前。
+    // 名前を入れなかったときの既定
     private var suggestedName: String {
         switch source {
         case .text:
@@ -152,10 +140,7 @@ struct DisplayEditorView: View {
         }
     }
 
-    /// 直すときに、保存してある内容を画面へ戻す。
-    ///
-    /// 文字は元の文字列を持っているので、そのまま編集を再開できる。
-    /// 写真は元データを持っていないので、選び直しになる。
+    // 直すときに,保存してある内容を画面へ戻す
     private func loadExisting() {
         guard let editing, name.isEmpty else { return }
         name = editing.name
@@ -167,17 +152,13 @@ struct DisplayEditorView: View {
 
     // MARK: - プレビュー
 
-    /// 296×128 をそのままの比率で見せる。
-    ///
-    /// interpolation(.none) にしているのは、拡大時に補間でぼかされると
-    /// 実際のドットの粗さが分からなくなるため。
+    // 296×128 をそのままの比率で見せる
     @ViewBuilder
     private var preview: some View {
         if let rendered {
             VStack(spacing: 6) {
                 GeometryReader { geo in
-                    // 画面上のポイント → 296×128 の座標 への換算係数。
-                    // これを掛けないと、指の移動量と実際のずれ方が食い違う。
+                    // 画面上のポイント → 296×128 の座標 への換算係数
                     let factor = CGFloat(DisplayBitmap.width) / max(geo.size.width, 1)
 
                     Image(uiImage: rendered)
@@ -229,8 +210,7 @@ struct DisplayEditorView: View {
             }
     }
 
-    /// タグへ送るときのデータ量。担当A・Bと形式を決めるときの材料になる。
-    @ViewBuilder
+    // タグへ送るときのデータ量
     private var sizeInfo: some View {
         if let packed, let rendered {
             VStack(alignment: .leading, spacing: 4) {
@@ -268,16 +248,12 @@ struct DisplayEditorView: View {
             }
 
             if pickedImage != nil {
-                // 自由に動かせるので収め方のプリセットは要らないが、
-                // 拡大しすぎて戻れなくなったときの逃げ道として1つだけ残す。
                 Button("位置と大きさをリセット") { applyFit(.contain) }
             }
         }
 
         if pickedImage != nil {
             Section {
-                // 写真はディザ、ロゴや線画はしきい値が向く。
-                // どちらが良いかは絵によるので、見ながら切り替えてもらう。
                 Toggle("ディザで濃淡を出す", isOn: $useDither)
 
                 if !useDither {

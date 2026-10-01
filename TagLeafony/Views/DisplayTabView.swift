@@ -7,18 +7,6 @@ import SwiftUI
 
 // ============================================================================
 //  「表示内容」タブの入口。登録済みの一覧を出す。
-//
-//  タブを開く
-//      → 登録してあるものが並ぶ（タグに出せる候補）
-//      → 「＋」から編集画面へ
-//      → 既存をタップすると直せる
-//
-//  サムネイルは、保存してある Base64 から復元して描いている。
-//  作ったときの画像を持ち回すのではなく送るデータから戻すことで、
-//  **一覧で見えているものとタグへ送るものが必ず一致する**。
-//
-//  いまの保存先は端末の中。サーバーのAPIが固まったら ContentStore の
-//  中身だけ差し替える。この画面は触らずに済む。
 // ============================================================================
 
 struct DisplayTabView: View {
@@ -64,8 +52,7 @@ struct DisplayTabView: View {
 
     private func row(_ content: DisplayContent) -> some View {
         HStack(spacing: 12) {
-            // 296×128 の比率のまま小さく出す。
-            // interpolation(.none) で、縮小時にぼやけないようにする。
+            // 296×128 の比率のまま小さく出す
             Group {
                 if let image = content.image {
                     Image(uiImage: image)
@@ -73,8 +60,7 @@ struct DisplayTabView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                 } else {
-                    // 復元に失敗した場合（データが壊れている、
-                    // ビットの並べ方の設定を変えた後など）
+                    // 復元に失敗した場合
                     Rectangle().fill(.quaternary)
                 }
             }
