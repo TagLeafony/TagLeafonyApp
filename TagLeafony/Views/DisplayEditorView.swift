@@ -223,6 +223,7 @@ struct DisplayEditorView: View {
             .font(.caption)
             .monospacedDigit()
         }
+        return EmptyView()
     }
 
     // MARK: - 文字
