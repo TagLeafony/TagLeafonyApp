@@ -12,10 +12,23 @@ import SwiftUI
 struct SettingsTabView: View {
 
     @ObservedObject private var link = TagLinkManager.shared
+    @ObservedObject private var auth = AuthManager.shared
 
     var body: some View {
         NavigationStack {
             Form {
+                Section("アカウント") {
+                    Button("ログアウト", role: .destructive) {
+                        auth.logout()
+                    }
+                }
+
+                Section("デバイス") {
+                    NavigationLink("デバイス管理") {
+                        DeviceSettingsView()
+                    }
+                }
+
                 Section("開発者向け") {
                     // 検証用の細かいログの切り替え
                     // 普段は off。到達距離や受信頻度を測るときだけ on にする
