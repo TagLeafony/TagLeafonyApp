@@ -13,15 +13,17 @@ struct TagLeafonyApp: App {
     // アプリが前面／背面のどちらにいるかを SwiftUI から受け取る
     @Environment(\.scenePhase) private var scenePhase
 
-    init() {
-        // ここで明示的に触って、起動直後に生成を確定させる
-        _ = TagLinkManager.shared
-    }
-
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            // ログイン済みかどうかで画面を切り替える。
+            // TagLinkManager.shared に最初に触れるのはログイン後（RootView → ContentView → TagTabView）
+            // になるので、ここでは明示的に生成しない。
+            RootView()
                 .onChange(of: scenePhase) { _, phase in
+                    // 未ログイン中は TagLinkManager.shared に触れない
+                    // （触れた時点でBLE監視が生成されてしまうため）
+                    guard AuthManager.shared.isLoggedIn else { return }
+
                     switch phase {
                     case .background:
                         // ホーム画面に戻った,または画面がロックされた

@@ -12,11 +12,14 @@ import SwiftUI
 struct DisplayTabView: View {
 
     @ObservedObject private var store = ContentStore.shared
+    @ObservedObject private var deviceManager = DeviceManager.shared
 
     var body: some View {
         NavigationStack {
             Group {
-                if store.contents.isEmpty {
+                if deviceManager.device == nil {
+                    noDeviceState
+                } else if store.contents.isEmpty && !store.isLoading {
                     emptyState
                 } else {
                     list
@@ -30,9 +33,23 @@ struct DisplayTabView: View {
                     } label: {
                         Label("新しく作る", systemImage: "plus")
                     }
+                    .disabled(deviceManager.device == nil)
                 }
             }
         }
+        .task { await store.refresh() }
+        .alert("エラー", isPresented: errorBinding) {
+            Button("OK") { store.errorMessage = nil }
+        } message: {
+            Text(store.errorMessage ?? "")
+        }
+    }
+
+    private var errorBinding: Binding<Bool> {
+        Binding(
+            get: { store.errorMessage != nil },
+            set: { if !$0 { store.errorMessage = nil } }
+        )
     }
 
     // MARK: - 一覧
@@ -45,9 +62,20 @@ struct DisplayTabView: View {
                 } label: {
                     row(content)
                 }
+                .swipeActions(edge: .leading) {
+                    if !content.isActive {
+                        Button("アクティブに設定") {
+                            Task { await store.setActive(content) }
+                        }
+                        .tint(.green)
+                    }
+                }
             }
-            .onDelete { store.delete(at: $0) }
+            .onDelete { offsets in
+                Task { await store.delete(at: offsets) }
+            }
         }
+        .refreshable { await store.refresh() }
     }
 
     private func row(_ content: DisplayContent) -> some View {
@@ -68,8 +96,20 @@ struct DisplayTabView: View {
             .border(.quaternary)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(content.name)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(content.name)
+                        .lineLimit(1)
+
+                    if content.isActive {
+                        Text("アクティブ")
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(.green.opacity(0.15))
+                            .foregroundStyle(.green)
+                            .clipShape(Capsule())
+                    }
+                }
                 Text(content.createdAt.formatted(date: .numeric, time: .shortened))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -92,6 +132,16 @@ struct DisplayTabView: View {
                 Text("新しく作る")
             }
             .buttonStyle(.borderedProminent)
+        }
+    }
+
+    // MARK: - デバイス未登録のとき
+
+    private var noDeviceState: some View {
+        ContentUnavailableView {
+            Label("デバイスが未登録です", systemImage: "tag.slash")
+        } description: {
+            Text("設定タブの「デバイス管理」から、タグのdevice_idを登録してください。")
         }
     }
 }

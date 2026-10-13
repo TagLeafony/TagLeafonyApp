@@ -39,6 +39,9 @@ struct DisplayEditorView: View {
     // 写真の置き方
     @State private var transform = ImageBinarizer.Transform.identity
 
+    // 保存中かどうか（サーバーへの通信が終わるまでボタンを無効化する）
+    @State private var isSaving = false
+
     // 指を動かしている最中の差分
     @GestureState private var dragDelta: CGSize = .zero
     @GestureState private var pinchDelta: CGFloat = 1
@@ -105,28 +108,53 @@ struct DisplayEditorView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button("保存") { save() }
-                    .disabled(packed == nil)
+                if isSaving {
+                    ProgressView()
+                } else {
+                    Button("保存") { save() }
+                        .disabled(packed == nil)
+                }
             }
         }
         .onAppear(perform: loadExisting)
+        .alert("保存できませんでした", isPresented: errorBinding) {
+            Button("OK") { store.errorMessage = nil }
+        } message: {
+            Text(store.errorMessage ?? "")
+        }
+    }
+
+    private var errorBinding: Binding<Bool> {
+        Binding(
+            get: { store.errorMessage != nil },
+            set: { if !$0 { store.errorMessage = nil } }
+        )
     }
 
     // MARK: - 保存
 
+    // このAPIには画像の更新エンドポイントが無いため、
+    // 「直す」ときは旧データを削除してから新しいデータをアップロードする
+    // （store.replace の内部で実施）。サーバー上では image_id が変わる。
     private func save() {
         guard let packed else { return }
 
-        let content = DisplayContent(
-            id: editing?.id ?? UUID(),              // 直すときは id を引き継ぐ
-            name: name.isEmpty ? suggestedName : name,
-            createdAt: editing?.createdAt ?? Date(),
-            bitmapBase64: packed.base64EncodedString(),
-            sourceText: source == .text ? text : nil
-        )
+        let finalName = name.isEmpty ? suggestedName : name
+        let base64 = packed.base64EncodedString()
+        let sourceText = source == .text ? text : nil
 
-        store.save(content)
-        dismiss()
+        isSaving = true
+        Task {
+            if let editing {
+                await store.replace(oldId: editing.id, name: finalName, bitmapBase64: base64, sourceText: sourceText)
+            } else {
+                await store.upload(name: finalName, bitmapBase64: base64, sourceText: sourceText)
+            }
+            isSaving = false
+            if store.errorMessage == nil {
+                dismiss()
+            }
+        }
     }
 
     // 名前を入れなかったときの既定
