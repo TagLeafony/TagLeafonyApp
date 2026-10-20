@@ -94,7 +94,22 @@ struct DeleteDeviceResponse: Decodable {
     let deviceId: String
 }
 
-// MARK: - 画像管理（API 2 / 3 / 5 / 7）
+// MARK: - ナノコン向け（API 1）
+
+/// デバイスが「今表示すべき画像」。アクティブ設定とスケジュール設定、
+/// どちらを採用するかはサーバー側で switch_time と現在時刻を比較して判定される。
+/// mode が "scheduled" のときだけ switchTime、"active" のときだけ setAt が入る。
+struct CurrentImageResponse: Decodable {
+    let success: Bool
+    let imageId: Int?
+    let base64Data: String?
+    let mode: String?
+    let switchTime: String?
+    let setAt: String?
+    let message: String
+}
+
+// MARK: - 画像管理（API 2 / 3 / 5 / 6 / 7 / 8）
 
 struct UploadImageRequest: Encodable {
     let deviceId: String
@@ -154,5 +169,38 @@ struct DeleteImageResponse: Decodable {
     let success: Bool
     let deviceId: String
     let imageId: Int
+    let message: String
+}
+
+struct SetScheduledImageRequest: Encodable {
+    let deviceId: String
+    let imageIdBefore: Int
+    let imageIdAfter: Int
+    /// ISO 8601形式の文字列（例: "2024-01-01T14:00:00Z"）。
+    let switchTime: String
+    let token: String
+}
+
+struct SetScheduledImageResponse: Decodable {
+    let success: Bool
+    let deviceId: String
+    let imageIdBefore: Int
+    let imageIdAfter: Int
+    let switchTime: String
+    let setAt: String
+    let message: String
+}
+
+struct SetFallbackImageRequest: Encodable {
+    let deviceId: String
+    let imageId: Int
+    let token: String
+}
+
+struct SetFallbackImageResponse: Decodable {
+    let success: Bool
+    let deviceId: String
+    let fallbackImageId: Int
+    let setAt: String
     let message: String
 }

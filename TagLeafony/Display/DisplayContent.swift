@@ -34,6 +34,12 @@ struct DisplayContent: Identifiable, Equatable {
     /// このデバイスで現在表示中（アクティブ）かどうか。
     var isActive: Bool
 
+    /// スケジュール（切り替え前/切り替え後のどちらか）に使われているかどうか。
+    var isScheduled: Bool
+
+    /// BLE再接続時に表示するフォールバック画像として設定されているかどうか。
+    var isFallback: Bool
+
     /// 保存しているデータから画像に戻す。
     var image: UIImage? {
         DisplayBitmap.unpack(base64: bitmapBase64)
@@ -144,6 +150,41 @@ final class ContentStore: ObservableObject {
         }
     }
 
+    /// BLE再接続時に表示するフォールバック画像として設定する。
+    func setFallback(_ content: DisplayContent) async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        guard let (deviceId, token) = requireDeviceAndToken() else { return }
+
+        do {
+            _ = try await APIClient.shared.setFallbackImage(deviceId: deviceId, imageId: content.id, token: token)
+            await refresh()
+        } catch {
+            handle(error)
+        }
+    }
+
+    /// 指定した時刻に before → after へ自動で切り替わるよう設定する。
+    func setSchedule(beforeId: Int, afterId: Int, switchTime: Date) async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        guard let (deviceId, token) = requireDeviceAndToken() else { return }
+
+        do {
+            _ = try await APIClient.shared.setScheduledImage(
+                deviceId: deviceId, imageIdBefore: beforeId, imageIdAfter: afterId,
+                switchTime: ISO8601DateFormatter().string(from: switchTime), token: token
+            )
+            await refresh()
+        } catch {
+            handle(error)
+        }
+    }
+
     func delete(_ content: DisplayContent) async {
         await delete(id: content.id)
     }
@@ -194,7 +235,9 @@ final class ContentStore: ObservableObject {
             createdAt: Self.parseDate(image.createdAt),
             bitmapBase64: image.base64Data,
             sourceText: meta?.sourceText,
-            isActive: image.isActive
+            isActive: image.isActive,
+            isScheduled: image.isScheduled,
+            isFallback: image.isFallback
         )
     }
 

@@ -87,7 +87,15 @@ final class APIClient {
         )
     }
 
-    // MARK: - 画像管理（API 2 / 3 / 5 / 7）
+    // MARK: - ナノコン向け（API 1）
+
+    /// 認証不要。device_id だけで、アクティブ設定とスケジュール設定のうち
+    /// サーバーが「今表示すべき」と判定した画像を取得する。
+    func currentImage(deviceId: String) async throws -> CurrentImageResponse {
+        try await send(.get, path: "/api/current_image", queryItems: [URLQueryItem(name: "device_id", value: deviceId)])
+    }
+
+    // MARK: - 画像管理（API 2 / 3 / 5 / 6 / 7 / 8）
 
     func uploadImage(deviceId: String, base64Data: String, token: String) async throws -> UploadImageResponse {
         try await send(
@@ -117,6 +125,25 @@ final class APIClient {
         try await send(
             .delete, path: "/api/delete_image",
             body: DeleteImageRequest(deviceId: deviceId, imageId: imageId, token: token)
+        )
+    }
+
+    func setScheduledImage(
+        deviceId: String, imageIdBefore: Int, imageIdAfter: Int, switchTime: String, token: String
+    ) async throws -> SetScheduledImageResponse {
+        try await send(
+            .post, path: "/api/set_scheduled_image",
+            body: SetScheduledImageRequest(
+                deviceId: deviceId, imageIdBefore: imageIdBefore, imageIdAfter: imageIdAfter,
+                switchTime: switchTime, token: token
+            )
+        )
+    }
+
+    func setFallbackImage(deviceId: String, imageId: Int, token: String) async throws -> SetFallbackImageResponse {
+        try await send(
+            .post, path: "/api/set_fallback_image",
+            body: SetFallbackImageRequest(deviceId: deviceId, imageId: imageId, token: token)
         )
     }
 
