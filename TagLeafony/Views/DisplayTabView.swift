@@ -35,6 +35,14 @@ struct DisplayTabView: View {
                     }
                     .disabled(deviceManager.device == nil)
                 }
+                ToolbarItem(placement: .primaryAction) {
+                    NavigationLink {
+                        ScheduleSettingsView()
+                    } label: {
+                        Label("スケジュール設定", systemImage: "clock")
+                    }
+                    .disabled(deviceManager.device == nil || store.contents.count < 2)
+                }
             }
         }
         .task { await store.refresh() }
@@ -69,6 +77,12 @@ struct DisplayTabView: View {
                         }
                         .tint(.green)
                     }
+                    if !content.isFallback {
+                        Button("フォールバックに設定") {
+                            Task { await store.setFallback(content) }
+                        }
+                        .tint(.orange)
+                    }
                 }
             }
             .onDelete { offsets in
@@ -101,13 +115,13 @@ struct DisplayTabView: View {
                         .lineLimit(1)
 
                     if content.isActive {
-                        Text("アクティブ")
-                            .font(.caption2)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(.green.opacity(0.15))
-                            .foregroundStyle(.green)
-                            .clipShape(Capsule())
+                        badge("アクティブ", color: .green)
+                    }
+                    if content.isScheduled {
+                        badge("スケジュール予定", color: .blue)
+                    }
+                    if content.isFallback {
+                        badge("フォールバック", color: .orange)
                     }
                 }
                 Text(content.createdAt.formatted(date: .numeric, time: .shortened))
@@ -116,6 +130,16 @@ struct DisplayTabView: View {
             }
         }
         .padding(.vertical, 2)
+    }
+
+    private func badge(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(.caption2)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.15))
+            .foregroundStyle(color)
+            .clipShape(Capsule())
     }
 
     // MARK: - 空のとき
