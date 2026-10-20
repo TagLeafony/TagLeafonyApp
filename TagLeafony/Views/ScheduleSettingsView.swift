@@ -34,16 +34,13 @@ struct ScheduleSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             } else {
-                Section("切り替え前の画像") {
+                Section("切り替え前後の画像") {
                     Picker("切り替え前", selection: $beforeId) {
                         Text("選択してください").tag(Int?.none)
                         ForEach(store.contents) { content in
                             Text(content.name).tag(Optional(content.id))
                         }
                     }
-                }
-
-                Section("切り替え後の画像") {
                     Picker("切り替え後", selection: $afterId) {
                         Text("選択してください").tag(Int?.none)
                         ForEach(store.contents) { content in

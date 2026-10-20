@@ -72,13 +72,13 @@ struct DisplayTabView: View {
                 }
                 .swipeActions(edge: .leading) {
                     if !content.isActive {
-                        Button("アクティブに設定") {
+                        Button("表示") {
                             Task { await store.setActive(content) }
                         }
                         .tint(.green)
                     }
                     if !content.isFallback {
-                        Button("フォールバックに設定") {
+                        Button("接続回復用") {
                             Task { await store.setFallback(content) }
                         }
                         .tint(.orange)
@@ -115,13 +115,13 @@ struct DisplayTabView: View {
                         .lineLimit(1)
 
                     if content.isActive {
-                        badge("アクティブ", color: .green)
+                        badge("表示中", color: .green)
                     }
                     if content.isScheduled {
-                        badge("スケジュール予定", color: .blue)
+                        badge("スケジュール設定中", color: .blue)
                     }
                     if content.isFallback {
-                        badge("フォールバック", color: .orange)
+                        badge("接続回復用", color: .orange)
                     }
                 }
                 Text(content.createdAt.formatted(date: .numeric, time: .shortened))
