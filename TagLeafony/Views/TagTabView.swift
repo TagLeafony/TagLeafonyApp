@@ -76,15 +76,15 @@ struct TagTabView: View {
                 .font(.largeTitle.bold())
                 .foregroundStyle(presenceColor)
 
-            Text(lastSeenText)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+//            Text(lastSeenText)
+//                .font(.subheadline)
+//                .foregroundStyle(.secondary)
 
             // 最後に確認できてからの経過
             if link.isRunning {
                 Text("\(Int(link.elapsed)) 秒前に確認")
                     .font(.caption)
-                    .foregroundStyle(link.elapsed > 5 ? .orange : .secondary)
+//                    .foregroundStyle(link.elapsed > 5 ? .orange : .secondary)
                     .monospacedDigit()   // 数字が揺れないように等幅にする
             }
 
@@ -157,9 +157,9 @@ struct TagTabView: View {
 
     private var presenceText: String {
         switch link.presence {
-        case .unknown: return link.isRunning ? "探しています" : "停止中"
-        case .present: return "近くにあります"
-        case .away:    return "離れています"
+        case .unknown: return link.isRunning ? "タグを探索中" : "停止中"
+        case .present: return "タグが見つかりました"
+        case .away:    return "タグが見つかりません"
         }
     }
 
@@ -189,7 +189,7 @@ struct TagTabView: View {
     private var backgroundTint: some View {
         Group {
             switch link.presence {
-            case .away: Color.red.opacity(0.10)
+//            case .away: Color.red.opacity(0.10)
             default:    Color.clear
             }
         }
