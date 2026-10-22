@@ -204,3 +204,26 @@ struct SetFallbackImageResponse: Decodable {
     let setAt: String
     let message: String
 }
+
+/// 現在設定されているスケジュール（API 9）。switch_time を過ぎていても、
+/// 削除されるまではそのまま返ってくる。設定が無いときは before/after/switchTime が nil。
+struct GetScheduledImageResponse: Decodable {
+    let success: Bool
+    let deviceId: String
+    let imageIdBefore: Int?
+    let imageIdAfter: Int?
+    let switchTime: String?
+    let setAt: String?
+    let message: String
+}
+
+struct DeleteScheduledImageRequest: Encodable {
+    let deviceId: String
+    let token: String
+}
+
+struct DeleteScheduledImageResponse: Decodable {
+    let success: Bool
+    let deviceId: String
+    let message: String
+}
