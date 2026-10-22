@@ -147,6 +147,23 @@ final class APIClient {
         )
     }
 
+    func getScheduledImage(deviceId: String, token: String) async throws -> GetScheduledImageResponse {
+        try await send(
+            .get, path: "/api/scheduled_image",
+            queryItems: [
+                URLQueryItem(name: "device_id", value: deviceId),
+                URLQueryItem(name: "token", value: token),
+            ]
+        )
+    }
+
+    func deleteScheduledImage(deviceId: String, token: String) async throws -> DeleteScheduledImageResponse {
+        try await send(
+            .delete, path: "/api/scheduled_image",
+            body: DeleteScheduledImageRequest(deviceId: deviceId, token: token)
+        )
+    }
+
     // MARK: - 共通の送受信
 
     private enum Method: String {

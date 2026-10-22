@@ -63,6 +63,16 @@ final class ContentStore: ObservableObject {
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
 
+    /// 現在サーバーに設定されているスケジュール。switch_time を過ぎても、
+    /// 削除するまではサーバー側に残り続けるので、ここも残ったまま表示する。
+    @Published private(set) var currentSchedule: ScheduleInfo?
+
+    struct ScheduleInfo: Equatable {
+        var beforeId: Int
+        var afterId: Int
+        var switchTime: Date
+    }
+
     /// name・sourceText はサーバーに保存されないので、端末内だけで持つ対応表。
     private struct LocalMeta: Codable {
         var name: String
@@ -179,6 +189,45 @@ final class ContentStore: ObservableObject {
                 deviceId: deviceId, imageIdBefore: beforeId, imageIdAfter: afterId,
                 switchTime: ISO8601DateFormatter().string(from: switchTime), token: token
             )
+            currentSchedule = ScheduleInfo(beforeId: beforeId, afterId: afterId, switchTime: switchTime)
+            await refresh()
+        } catch {
+            handle(error)
+        }
+    }
+
+    /// 現在設定されているスケジュールを取り直す。
+    func loadSchedule() async {
+        guard let (deviceId, token) = requireDeviceAndToken() else { return }
+
+        do {
+            let response = try await APIClient.shared.getScheduledImage(deviceId: deviceId, token: token)
+            if let before = response.imageIdBefore,
+               let after = response.imageIdAfter,
+               let switchTimeString = response.switchTime {
+                currentSchedule = ScheduleInfo(
+                    beforeId: before, afterId: after, switchTime: Self.parseDate(switchTimeString)
+                )
+            } else {
+                currentSchedule = nil
+            }
+        } catch {
+            handle(error)
+        }
+    }
+
+    /// スケジュールを解除する。期限を過ぎた後もサーバーがそれを優先し続けてしまうため、
+    /// 手動でアクティブ設定に戻すにはこれが必要。
+    func clearSchedule() async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        guard let (deviceId, token) = requireDeviceAndToken() else { return }
+
+        do {
+            _ = try await APIClient.shared.deleteScheduledImage(deviceId: deviceId, token: token)
+            currentSchedule = nil
             await refresh()
         } catch {
             handle(error)
